@@ -1,0 +1,19 @@
+<?php
+if (!defined('ADR_APP_START') || ADR_APP_START !== 'XandA') {
+    error_log("Access config from outside app!");
+    return [];
+}
+/**
+ * @return array{
+ *     db_host: string,
+ *     db_name: string,
+ *     db_user: string,
+ *     db_password: string
+ * }
+ */
+return [
+    'db_host' => 'localhost',
+    'db_name' => 'name',
+    'db_user' => 'user',
+    'db_password' => 'pass',
+];
