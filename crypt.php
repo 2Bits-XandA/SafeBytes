@@ -37,6 +37,9 @@ function generate_key() {
 
 // Funktion zum Verschlüsseln der Daten
 function encrypt_data($data, $key) {
+        if (strlen($key)<32) {
+            throw new Error("Key is to short, must be >=32 but is " . strlen($key));
+        }
     return openssl_encrypt(
         $data,
         "AES-256-CBC",
@@ -44,4 +47,28 @@ function encrypt_data($data, $key) {
         0,
         substr($key, 0, 16)
     );
+}
+
+/**
+ * Entschlüsselt verschlüsselte Daten mit dem MasterKey.
+ *
+ * @param string $encryptedData Die verschlüsselten Daten aus dem POST-Request.
+ * @param string $masterKey Ein 64-stelliger hexadezimaler Schlüssel.
+ * @return string|null Gibt die entschlüsselten Daten zurück oder null bei Fehler.
+ */
+function decrypt_data(string $encryptedData, string $masterKey) {
+    if (strlen($masterKey)<32) {
+        throw new Error("Key is to short, must be >=32 but is " . strlen($masterKey));
+    }
+
+    // Entschlüsselung
+    $decodedData = openssl_decrypt(
+        $encryptedData,
+        "AES-256-CBC",
+        $masterKey, // Dieser Teil des Schlüssels wird für die Entschlüsselung verwendet
+        0,
+        substr($masterKey, 0, 16) // Die ersten 16 Bytes als IV
+    );
+
+    return $decodedData ?: null; // Rückgabe der entschlüsselten Daten oder null bei Fehler
 }
