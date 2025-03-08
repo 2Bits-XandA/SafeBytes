@@ -1,18 +1,8 @@
 <?php
 define("ADR_APP_START", "XandA");
-require_once 'database_session_manager.php';
-require_once 'crypt.php';
+/** @var DatabaseHandler $db */
+$db = require "init.php";
 
-/** @var array{db_host: string, db_name: string, db_user: string, db_password: string} $config */
-$config = require 'config.php';
-
-$db = new DatabaseHandler(
-    'mysql:host=' . $config['db_host'] . ';dbname=' . $config['db_name'] . ';charset=utf8',
-    $config['db_user'], // Benutzername
-    $config['db_password'] // Passwort
-);
-
-$db->startSession();
 if (isset($_GET['key']) && preg_match('/^[a-fA-F0-9]{56}$/', $_GET['key'])) {
     $db->setSessionValue("schluessel", $_GET["key"]);
 }
@@ -151,8 +141,45 @@ if ($schluessel !== '') {
         formElement.className = "alert " + (type ?? "alert-danger");
         formElement.style.display = "block";
     }
-    
-    async function decodeData(encrpytedData, partialKey, userKey) {
+
+    async function encryptData(data, partialKey, userKey) {
+        try {
+            // Convert string key and IV to a Uint8Array
+            const rawKey = new TextEncoder().encode(partialKey + userKey); // Key (original from PHP) with missing 8 digits filled
+            const rawIV = rawKey.slice(0, 16); // First 16 bytes of key as IV
+
+            // Import the key into the Crypto API
+            const cryptoKey = await window.crypto.subtle.importKey(
+                "raw",
+                rawKey,
+                {name: "AES-CBC"},
+                false,
+                ["encrypt"]
+            );
+
+            // Encode the data to be encrypted
+            const encodedData = new TextEncoder().encode(data);
+
+            // Encrypt the data
+            const encryptedBuffer = await window.crypto.subtle.encrypt(
+                {
+                    name: "AES-CBC",
+                    iv: rawIV,
+                },
+                cryptoKey,
+                encodedData
+            );
+
+            // Convert encrypted buffer to Base64 string
+            const encryptedBytes = new Uint8Array(encryptedBuffer);
+            return btoa(String.fromCharCode(...encryptedBytes));
+        } catch (error) {
+            console.error("Encryption failed:", error);
+        }
+        return "";
+    }
+
+    async function decryptData(encrpytedData, partialKey, userKey) {
         try {
             // Base64 decoding function
             const base64ToArrayBuffer = (base64) => {
@@ -198,7 +225,7 @@ if ($schluessel !== '') {
         }
         return "";
     }
-    async function handleEncrypedData(encrpytedData, partialKey, userKey) {
+    async function processDecryption(encrpytedData, partialKey, userKey) {
         if (encrpytedData === '') {
             const formElement = document.querySelector("form");
             formElement.style.display = "none"; // Versteckt das Formular
@@ -207,7 +234,7 @@ if ($schluessel !== '') {
             showError("Die verschlüsselten Daten fehlen oder sind ungültig. Bitte wenden Sie sich an den Administrator.");
         } else {
 
-            const decodedData = await decodeData(encrpytedData, partialKey, userKey);
+            const decodedData = await decryptData(encrpytedData, partialKey, userKey);
             if (decodedData !== "") {
                 showError("Die entschlüsselten Daten: " + decodedData, "alert-success");
 
@@ -243,6 +270,7 @@ if ($schluessel !== '') {
         }
     }
 
+    let userKey = undefined;
 
     document.addEventListener("DOMContentLoaded", function () {
         const codeInput = document.getElementById("verschluesselungscode");
@@ -250,8 +278,8 @@ if ($schluessel !== '') {
 
         submitButton.addEventListener("click", function (e) {
             e.preventDefault();
-            const userKey = codeInput.value;
-            handleEncrypedData(encrpytedData, partialKey, userKey).catch((e) => console.log("Error in OnClick", e));
+            userKey = codeInput.value;
+            processDecryption(encrpytedData, partialKey, userKey).catch((e) => console.log("Error in OnClick", e));
             return false;
         });
 
@@ -273,15 +301,18 @@ if ($schluessel !== '') {
 
             console.log("Erstelltes JSON: ", jsonData);
             showError("JSON: " + jsonData, "alert-success");
-
-            // Optional: Hier kannst du das JSON z. B. per AJAX an einen Server senden
-            // fetch("/endpoint", {
-            //     method: "POST",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //     },
-            //     body: jsonData,
-            // }).then(response => console.log(response)).catch(error => console.error(error));
+            encryptData(jsonData, partialKey, userKey)
+                .then((encrypted) => {
+                    return fetch("./update.php", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "text/plain",
+                        },
+                        body: encrypted,
+                    })
+                })
+                .then(response => console.log(response))
+                .catch(error => console.error(error));
         });
     });
 
