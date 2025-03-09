@@ -1,0 +1,6 @@
+AuthType Basic
+AuthName "Geschützter Bereich"
+AuthUserFile ../../.htpasswd
+Require valid-user
+
+DirectoryIndex index.php
