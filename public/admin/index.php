@@ -88,9 +88,6 @@ $db = require "../../init.php";
         const indices = <?php echo json_encode(KEY_INDICES); ?>;
         const currentRows = [];
 
-        // Decrypted data matches original data. KSHvQFusI__rcoFIU.9CVKuu m9mtktdb  >> KSHvQFusI__rcoFIU.9CVKuu
-        console.log(splitKey("mK5Yo3S.HzvkQ~L1RFLubs-ImP_X_PrScLo7pFhIxU6.q9blCrVTKMuu", indices));
-
         const csvOptions = {
             delimiter: ",",
             linebreak: "\n"
@@ -234,17 +231,6 @@ $db = require "../../init.php";
             const key = splitKey(urlPart, indices);
             const myEncryptedData = await encryptData(jsonString, key.masterKey, extra);
 
-            // Re-Test:
-            const decryptedData = await decryptData(myEncryptedData, key.masterKey, extra);
-            if (decryptedData !== jsonString) {
-                console.error("Decrypted data does not match original data.");
-                console.error("Original:", jsonString);
-                console.error("Decrypted:", decryptedData);
-                throw new Error("Decrypted data does not match original data.");
-            } else {
-                console.log("Decrypted data matches original data.", key.masterKey, extra);
-            }
-
             return {
                 sb_urlPart: urlPart,
                 sb_extra: extra,
@@ -285,7 +271,7 @@ $db = require "../../init.php";
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "export.csv";
+            a.download = "export_crypt_keys.csv";
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -334,7 +320,6 @@ $db = require "../../init.php";
                     currentRows.push({ ...record, ...encryptedData});
                 });
                 Promise.all(promises).then(() => {
-                    console.log("All rows processed.", currentRows);
                     rebuildPage();
                 }).catch(error => {
                     console.error(error);
@@ -369,9 +354,7 @@ $db = require "../../init.php";
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Data successfully sent to server:', data);
                     exportCsv();
-                    console.log("Exported");
                     currentRows.length = 0;
                     rebuildPage();
                     alert('Daten erfolgreich gespeichert!');

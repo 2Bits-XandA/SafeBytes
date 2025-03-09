@@ -155,7 +155,7 @@ if ($schluessel !== '') {
 
             const decodedData = await decryptData(encrpytedData, partialKey, userKey);
             if (decodedData !== "") {
-                showError("Die entschlüsselten Daten: " + decodedData, "alert-success");
+                showError("Daten erfolgreich entschlüsselt", "alert-success");
 
                 try {
                     const data = JSON.parse(decodedData);
@@ -223,8 +223,7 @@ if ($schluessel !== '') {
                 trainingTeilnahme: document.querySelector('input[name="trainingTeilnahme"]:checked')?.value || ""
             });
 
-            console.log("Erstelltes JSON: ", jsonData);
-            showError("JSON: " + jsonData, "alert-success");
+            showError("Daten erfolgreich verschlüsselt für den Versand", "alert-success");
             encryptData(jsonData, partialKey, userKey)
                 .then((encrypted) => {
                     return fetch("./update.php", {
@@ -244,6 +243,4 @@ if ($schluessel !== '') {
 <!-- Bootstrap Bundle with Popper -->
 <script src="./js/bootstrap.bundle.js"></script>
 </body>
-
 </html>
-<?php error_log("Key: " . $schluessel); ?>
