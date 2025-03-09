@@ -81,3 +81,35 @@ async function decryptData(encrpytedData, partialKey, userKey) {
     }
     return "";
 }
+
+/**
+ * Teilt einen Schlüssel basierend auf den angegebenen Indizes auf.
+ *
+ * @param {string} key - Der ursprüngliche Schlüsselstring.
+ * @param {number[]} indices - Ein Array von Indizes.
+ * @returns {{ schluessel: string, masterKey: string }} - Ein Objekt mit `schluessel` und `masterKey`.
+ */
+function splitKey(key, indices) {
+    if (key.length < 56) {
+        console.error("Key is not 56 - Key is " + key.length);
+        return { schluessel: "", masterKey: "" };
+    }
+
+    indices = [...new Set(indices)]; // Dedupliziere die Indizes
+    if (indices.length !== 32) {
+        console.error("Indices is not 32 - Indices is " + indices.length);
+    }
+
+    let schluessel = '';
+    let masterKey = '';
+
+    for (let i = 0; i < 56; i++) {
+        if (indices.includes(i)) {
+            schluessel += key[i];
+        } else {
+            masterKey += key[i];
+        }
+    }
+
+    return { schluessel, masterKey };
+}
