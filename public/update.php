@@ -22,13 +22,12 @@ if (!isset($input) || $input === false || $schluessel === "") {
     exit();
 }
 
-$keys = splitKey($schluessel);
+$keys = splitKey($schluessel, KEY_INDICES);
 // IP-Adresse des Absenders abrufen
 $ipAddress = $_SERVER['REMOTE_ADDR'];
 
 // Aktuelle Uhrzeit im Format 'YYYY-MM-DD HH:MM:SS'
 $createdAt = date('Y-m-d H:i:s');
-
 try {
     // SQL-Statement vorbereiten
     $count = $db->execute(
