@@ -8,7 +8,8 @@ if (!defined('ADR_APP_START') || ADR_APP_START !== 'XandA') {
  *     db_host: string,
  *     db_name: string,
  *     db_user: string,
- *     db_password: string
+ *     db_password: string,
+ *     key_indices: number[]
  * }
  */
 return [
@@ -16,4 +17,5 @@ return [
     'db_name' => 'name',
     'db_user' => 'user',
     'db_password' => 'pass',
+    'key_indices' => [3, 14, 25, 36, 47, 0, 11, 22, 33, 44, 7, 18, 29, 40, 51, 2, 13, 24, 35, 46, 5, 16, 27, 38, 49, 9, 20, 31, 42, 53, 4, 15],
 ];

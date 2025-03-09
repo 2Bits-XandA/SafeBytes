@@ -19,6 +19,7 @@ class DatabaseHandler
             $this->pdo = new PDO($dsn, $username, $password, $options);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
+            http_send_status(506);
             die("Datenbankverbindung fehlgeschlagen: " . $e->getMessage());
         }
     }

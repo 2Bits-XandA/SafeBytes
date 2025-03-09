@@ -1,3 +1,19 @@
+# if server is missconfigured and this folder becomes Document root, prevent all access to it.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^ - [F] # Zugriff verbieten
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>
+
+<Directory "lib">
+    Order Allow,Deny
+    Deny from all
+</Directory>
+
 <Files "config.php">
     Order Allow,Deny
     Deny from all

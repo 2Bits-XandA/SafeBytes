@@ -1,7 +1,7 @@
 <?php
 define("ADR_APP_START", "XandA");
 /** @var DatabaseHandler $db */
-$db = require "init.php";
+$db = require "../init.php";
 
 /* SQL: CREATE TABLE updates (
     id INT AUTO_INCREMENT PRIMARY KEY,
