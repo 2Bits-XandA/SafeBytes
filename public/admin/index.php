@@ -72,6 +72,11 @@ $db = require "../../init.php";
             </table>
         </div>
 
+        
+        <!-- Speichern Button -->
+        <div class="mt-4 text-center">
+            <button id="save-button" class="btn btn-success">Speichern</button>
+        </div>
 
     </div>
 
@@ -82,6 +87,14 @@ $db = require "../../init.php";
     <script>
         const indices = <?php echo json_encode(KEY_INDICES); ?>;
         const currentRows = [];
+
+        // Decrypted data matches original data. KSHvQFusI__rcoFIU.9CVKuu m9mtktdb  >> KSHvQFusI__rcoFIU.9CVKuu
+        console.log(splitKey("mK5Yo3S.HzvkQ~L1RFLubs-ImP_X_PrScLo7pFhIxU6.q9blCrVTKMuu", indices));
+
+        const csvOptions = {
+            delimiter: ",",
+            linebreak: "\n"
+        };
 
         function rebuildMailSelect() {
             if (currentRows.length > 0) {
@@ -215,16 +228,66 @@ $db = require "../../init.php";
         }
         
         async function generateEncryptedData(jsonString) {
-            $myRandomKey = randomKey();
-            const urlPart = randomKey().substring(0, 56);
-            const extra = randomKey().substring(56);
-            $key = splitKey(urlPart, indices);
-            const cryptedData = await encryptData(jsonString, $key.masterKey, extra);
+            const myRandomKey = randomKey();
+            const urlPart = myRandomKey.substring(0, 56);
+            const extra = myRandomKey.substring(56);
+            const key = splitKey(urlPart, indices);
+            const myEncryptedData = await encryptData(jsonString, key.masterKey, extra);
+
+            // Re-Test:
+            const decryptedData = await decryptData(myEncryptedData, key.masterKey, extra);
+            if (decryptedData !== jsonString) {
+                console.error("Decrypted data does not match original data.");
+                console.error("Original:", jsonString);
+                console.error("Decrypted:", decryptedData);
+                throw new Error("Decrypted data does not match original data.");
+            } else {
+                console.log("Decrypted data matches original data.", key.masterKey, extra);
+            }
+
             return {
                 sb_urlPart: urlPart,
                 sb_extra: extra,
-                _encryptedData: cryptedData,
+                _encryptedData: myEncryptedData,
             }
+        }
+
+        function buildStoreRequest() {
+            if (currentRows.length === 0) {
+                console.log("No data to rebuild from.");
+                return;
+            }
+            const storeRequest = {
+                readOnlyFields: Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value).join(","),
+                data: currentRows.map(row => {
+                    return {
+                        urlPart: row.sb_urlPart,
+                        encryptData: row._encryptedData,
+                    }
+                })
+            };
+            console.log("Store Request", storeRequest);
+            return storeRequest;
+        }
+
+        function exportCsv() {
+            const dataToExport = currentRows.map((row, index) => {
+                return {
+                    index,
+                    urlPart: row.sb_urlPart,
+                    userKey: row.sb_extra,
+                }
+            });
+
+            const csv = Papa.unparse(dataToExport, csvOptions);
+            console.log("CSV", csv);
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "export.csv";
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         // JavaScript: Datei einlesen und Tabelle befüllen
@@ -244,8 +307,16 @@ $db = require "../../init.php";
                 currentRows.length = 0;
                 const data = e.target.result;
                 const papaData = Papa.parse(data);
+                if (papaData.errors.length > 0) {
+                    console.error("Errors while parsing CSV:", papaData.errors);
+                    alert("Fehler beim Parsen der CSV-Datei!");
+                    return;
+                }
                 const rows = papaData.data;
-
+                if (papaData.meta) {
+                    csvOptions.delimiter = papaData.meta.delimiter;
+                    csvOptions.linebreak = papaData.meta.linebreak;
+                }
                 // Erste Zeile als Header (Schlüssel)
                 const headers = rows.shift().map(header => {
                     return header.trim().toLowerCase().replace(/\s+/g, "_").replace(/^[^a-z]+/, "");
@@ -270,6 +341,45 @@ $db = require "../../init.php";
                 })
             };
             reader.readAsText(file);
+        });
+
+
+        document.getElementById('save-button').addEventListener('click', function () {
+            const storeRequest = buildStoreRequest();
+
+            if (!storeRequest) {
+                console.log("Store request could not be built. No data available.");
+                return;
+            }
+
+            const isAdminPath = window.location.pathname.endsWith('admin.php') || window.location.pathname.endsWith('/');
+            const storeUrl = isAdminPath ? './store.php' : './admin/store.php';
+
+            fetch(storeUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(storeRequest),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Data successfully sent to server:', data);
+                    exportCsv();
+                    console.log("Exported");
+                    currentRows.length = 0;
+                    rebuildPage();
+                    alert('Daten erfolgreich gespeichert!');
+                })
+                .catch(error => {
+                    console.error('Error while sending data:', error);
+                    alert('Fehler beim Speichern der Daten!');
+                });
         });
     </script>
 </body>
