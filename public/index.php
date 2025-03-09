@@ -3,9 +3,10 @@ define("ADR_APP_START", "XandA");
 /** @var DatabaseHandler $db */
 $db = require "../init.php";
 
-if (isset($_GET['key']) && preg_match('/^[a-fA-F0-9]{56}$/', $_GET['key'])) {
-    $db->setSessionValue("schluessel", $_GET["key"]);
+if (isset($_GET['key'])) {
+    $db->setSessionValue("schluessel", isPossibleKey($_GET['key']) ? $_GET["key"]: "");
 }
+
 
 $schluessel = $db->getSessionValue("schluessel", "");
 
@@ -19,8 +20,7 @@ if ($schluessel !== '') {
         $encodedData = $daten[0]['daten'];
         $partialKey = $key["masterKey"];
     }
-}
-error_log("Resolved Key: " . $schluessel);
+} // TODO should we use gibberish data if nothing is found?
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -192,6 +192,11 @@ error_log("Resolved Key: " . $schluessel);
     let userKey = undefined;
 
     document.addEventListener("DOMContentLoaded", function () {
+        // TODO for debugging this is useful - should it be removed?
+        if (encrpytedData === '') {
+            showError("Keine Daten vorhanden. Bitte wenden Sie sich an den Administrator.");
+        }
+
         const codeInput = document.getElementById("verschluesselungscode");
         const submitButton = document.getElementById("key-submit");
 

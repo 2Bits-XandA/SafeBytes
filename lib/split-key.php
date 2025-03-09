@@ -1,4 +1,14 @@
 <?php
+define("SPLIT_KEY_CHARS", '/^[abcdefghklmnpqrstuvwxyz23456789ABCDEFGHKLMNPRSTUVWXYZoOQ01ijIJ~\.\-_]+$/');
+
+/**
+ * @param $key
+ * @return false
+ */
+function isPossibleKey($key): bool
+{
+    return strlen($key) >= 56 && preg_match(SPLIT_KEY_CHARS, $key) !== false;
+}
 
 /**
  * @param $key
