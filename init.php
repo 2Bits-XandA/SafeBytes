@@ -6,7 +6,6 @@ if (!defined('ADR_APP_START') || ADR_APP_START !== 'XandA') {
 }
 
 require_once 'database_session_manager.php';
-require_once 'crypt.php';
 
 /** @var array{db_host: string, db_name: string, db_user: string, db_password: string} $config */
 $config = require 'config.php';
